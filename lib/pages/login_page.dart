@@ -5,7 +5,7 @@ import 'package:gym_project_app/components/square_tile.dart';
 import 'package:gym_project_app/pages/recovery_password.dart';
 import 'package:gym_project_app/pages/register.dart';
 import 'package:gym_project_app/services/api_service.dart';
-import 'package:gym_project_app/pages/gym_list_page.dart';
+import 'package:gym_project_app/pages/home_page.dart';
 
 class LoginPage extends StatelessWidget {
   LoginPage({super.key});
@@ -22,14 +22,12 @@ class LoginPage extends StatelessWidget {
           emailController.text,
           passwordController.text,
         );
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(result)),
-        );
-        // Navigate to GymListPage on successful login
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => const GymListPage()),
-        );
+        if (result == 'Login successful') {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => const HomePage()),
+          );
+        }
       } catch (e) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(e.toString())),
@@ -41,6 +39,7 @@ class LoginPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final screenWidth = MediaQuery.of(context).size.width;
 
     return Scaffold(
       body: SafeArea(
@@ -57,34 +56,40 @@ class LoginPage extends StatelessWidget {
                     style: theme.textTheme.headlineMedium,
                   ),
                   const SizedBox(height: 40),
-                  MyTextField(
-                    controller: emailController,
-                    hintText: 'Email',
-                    obscureText: false,
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Por favor, insira seu email';
-                      }
-                      if (!RegExp(r'\S+@\S+\.\S+').hasMatch(value)) {
-                        return 'Por favor, insira um email válido';
-                      }
-                      return null;
-                    },
+                  SizedBox(
+                    width: screenWidth * 0.9,
+                    child: MyTextField(
+                      controller: emailController,
+                      hintText: 'Email',
+                      obscureText: false,
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return 'Por favor, insira seu email';
+                        }
+                        if (!RegExp(r'\S+@\S+\.\S+').hasMatch(value)) {
+                          return 'Por favor, insira um email válido';
+                        }
+                        return null;
+                      },
+                    ),
                   ),
                   const SizedBox(height: 16),
-                  MyTextField(
-                    controller: passwordController,
-                    hintText: 'Senha',
-                    obscureText: true,
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Por favor, insira sua senha';
-                      }
-                      if (value.length < 6) {
-                        return 'A senha deve ter pelo menos 6 caracteres';
-                      }
-                      return null;
-                    },
+                  SizedBox(
+                    width: screenWidth * 0.9,
+                    child: MyTextField(
+                      controller: passwordController,
+                      hintText: 'Senha',
+                      obscureText: true,
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return 'Por favor, insira sua senha';
+                        }
+                        if (value.length < 6) {
+                          return 'A senha deve ter pelo menos 6 caracteres';
+                        }
+                        return null;
+                      },
+                    ),
                   ),
                   const SizedBox(height: 8),
                   Align(
@@ -105,6 +110,7 @@ class LoginPage extends StatelessWidget {
                   Button(
                     onTap: () => signUserIn(context),
                     text: 'Entrar',
+                    width: screenWidth * 0.75,
                   ),
                   const SizedBox(height: 40),
                   Text(
@@ -133,7 +139,7 @@ class LoginPage extends StatelessWidget {
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (context) => RegisterPage(),
+                              builder: (context) => const RegisterPage(),
                             ),
                           );
                         },
