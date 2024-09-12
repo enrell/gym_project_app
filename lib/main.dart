@@ -1,7 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:gym_project_app/pages/login_page.dart';
+import 'package:gym_project_app/pages/home_page.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:gym_project_app/services/api_service.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
-void main() {
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await dotenv.load();
+  
+  const storage = FlutterSecureStorage();
+  await storage.write(key: 'access_token', value: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiTUVNQkVSIiwic3ViIjoiNTViOTZjYTEtOTM5Ny00ZTU5LTg1YzYtYWZiODk2NzMzZjBhIiwiaWF0IjoxNzI2MTMwNDA5fQ.87m6iBCZBj-mIQixPOjYBO4TW6T8PXu7ROKZXBcjfy8');
+  
   runApp(const MyApp());
 }
 
@@ -11,50 +21,30 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Gym Project App',
+      title: 'Gym App',
       theme: ThemeData(
-        primarySwatch: Colors.blue,
-        scaffoldBackgroundColor: Colors.white,
-        appBarTheme: const AppBarTheme(
-          backgroundColor: Colors.white,
-          foregroundColor: Colors.black,
-          elevation: 0,
-        ),
-        textTheme: const TextTheme(
-          headlineMedium: TextStyle(
-            fontSize: 24,
-            fontWeight: FontWeight.bold,
-            color: Colors.black,
-          ),
-          bodyMedium: TextStyle(
-            fontSize: 16,
-            color: Colors.black87,
-          ),
-        ),
-        inputDecorationTheme: InputDecorationTheme(
-          filled: true,
-          fillColor: Colors.grey[100],
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: BorderSide.none,
-          ),
-          focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(12),
-            borderSide: const BorderSide(color: Colors.blue, width: 2),
-          ),
+        primaryColor: Colors.blue,
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: Colors.blue,
+          primary: Colors.blue,
         ),
         elevatedButtonTheme: ElevatedButtonThemeData(
           style: ElevatedButton.styleFrom(
             backgroundColor: Colors.blue,
             foregroundColor: Colors.white,
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
           ),
         ),
+        floatingActionButtonTheme: const FloatingActionButtonThemeData(
+          backgroundColor: Colors.blue,
+          foregroundColor: Colors.white,
+        ),
       ),
-      home: LoginPage(),
+      home: _decideInitialRoute(),
     );
+  }
+
+  Widget _decideInitialRoute() {
+    final apiService = ApiService();
+    return apiService.getToken() != null ? const HomePage() : LoginPage();
   }
 }
