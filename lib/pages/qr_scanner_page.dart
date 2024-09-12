@@ -1,32 +1,48 @@
 import 'package:flutter/material.dart';
 import 'package:qr_code_scanner/qr_code_scanner.dart';
-import 'package:gym_project_app/services/api_service.dart';
 
 class QRScannerPage extends StatefulWidget {
-  const QRScannerPage({super.key});
+  final Function(String) onScanComplete;
+
+  const QRScannerPage({Key? key, required this.onScanComplete}) : super(key: key);
 
   @override
-  _QRScannerPageState createState() => _QRScannerPageState();
+  State<QRScannerPage> createState() => _QRScannerPageState();
 }
 
-class _QRScannerPageState extends State<QRScannerPage> {
+class _QRScannerPageState extends State<QRScannerPage> with WidgetsBindingObserver {
   final GlobalKey qrKey = GlobalKey(debugLabel: 'QR');
   QRViewController? controller;
-  bool _isProcessing = false;
+  bool _isScanning = true;
 
   @override
-  void reassemble() {
-    super.reassemble();
-    if (controller != null) {
-      controller!.pauseCamera();
-      controller!.resumeCamera();
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void dispose() {
+    controller?.dispose();
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      controller?.resumeCamera();
+    } else if (state == AppLifecycleState.inactive) {
+      controller?.pauseCamera();
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Escanear QR Code')),
+      appBar: AppBar(
+        title: const Text('Scan QR Code'),
+      ),
       body: Column(
         children: <Widget>[
           Expanded(
@@ -43,12 +59,10 @@ class _QRScannerPageState extends State<QRScannerPage> {
               ),
             ),
           ),
-          Expanded(
+          const Expanded(
             flex: 1,
             child: Center(
-              child: _isProcessing
-                  ? const CircularProgressIndicator()
-                  : const Text('Escaneie o QR Code da catraca'),
+              child: Text('Posicione o QR Code dentro da área de leitura'),
             ),
           )
         ],
@@ -57,33 +71,17 @@ class _QRScannerPageState extends State<QRScannerPage> {
   }
 
   void _onQRViewCreated(QRViewController controller) {
-    this.controller = controller;
-    controller.scannedDataStream.listen((scanData) async {
-      if (_isProcessing || scanData.code == null) return;
-      setState(() {
-        _isProcessing = true;
-      });
-      
-      try {
-        final result = await ApiService().processQRCode(scanData.code!);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(result)),
-        );
-      } catch (e) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Erro ao processar QR Code: ${e.toString()}')),
-        );
-      } finally {
+    setState(() {
+      this.controller = controller;
+    });
+    controller.scannedDataStream.listen((scanData) {
+      if (_isScanning && scanData.code != null) {
         setState(() {
-          _isProcessing = false;
+          _isScanning = false;
         });
+        widget.onScanComplete(scanData.code!);
+        Navigator.of(context).pop();
       }
     });
-  }
-
-  @override
-  void dispose() {
-    controller?.dispose();
-    super.dispose();
   }
 }
