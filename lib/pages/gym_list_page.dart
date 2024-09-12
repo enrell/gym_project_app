@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:gym_project_app/models/gym.dart';
 import 'package:gym_project_app/services/gym_service.dart';
-import 'package:gym_project_app/pages/gym_detail_page.dart';
+import 'package:gym_project_app/components/gym_card.dart';
 import 'package:gym_project_app/pages/qr_scanner_page.dart';
+import 'package:gym_project_app/services/api_service.dart';
 
 class GymListPage extends StatefulWidget {
   const GymListPage({super.key});
@@ -13,8 +14,11 @@ class GymListPage extends StatefulWidget {
 
 class GymListPageState extends State<GymListPage> {
   final GymService _gymService = GymService();
-  List<Gym> _gyms = [];
+  final ApiService _apiService = ApiService();
+  final List<Gym> _gyms = [];
   bool _isLoading = true;
+  int _currentPage = 1;
+  int _totalPages = 1;
 
   @override
   void initState() {
@@ -22,19 +26,73 @@ class GymListPageState extends State<GymListPage> {
     _loadGyms();
   }
 
-  Future<void> _loadGyms() async {
+  Future<void> _loadGyms({bool refresh = false}) async {
+    if (refresh) {
+      setState(() {
+        _currentPage = 1;
+        _gyms.clear();
+      });
+    }
+
+    if (_currentPage > _totalPages) return;
+
+    setState(() {
+      _isLoading = true;
+    });
+
     try {
-      final gyms = await _gymService.getNearbyGyms();
-      setState(() {
-        _gyms = gyms;
-        _isLoading = false;
-      });
+      final result = await _gymService.getGyms(
+        page: _currentPage,
+        perPage: 20,
+      );
+      if (mounted) {
+        setState(() {
+          _gyms.addAll(result['gyms'] as List<Gym>);
+          _totalPages = result['total_pages'] as int;
+          _currentPage++;
+          _isLoading = false;
+        });
+      }
     } catch (e) {
-      setState(() {
-        _isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+        if (e.toString().contains('No access token available')) {
+          // Handle the case where there's no token (user might need to log in again)
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Session expired. Please log in again.')),
+          );
+          // Navigate to login page or show login dialog
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Failed to load gyms: ${e.toString()}')),
+          );
+        }
+      }
+    }
+  }
+
+  void _navigateToQRScanner() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => QRScannerPage(
+          onScanComplete: _performCheckIn,
+        ),
+      ),
+    );
+  }
+
+  Future<void> _performCheckIn(String qrCode) async {
+    try {
+      final result = await _apiService.performCheckIn(qrCode);
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Failed to load gyms')),
+        SnackBar(content: Text(result['message'])),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error during check-in: ${e.toString()}')),
       );
     }
   }
@@ -47,36 +105,30 @@ class GymListPageState extends State<GymListPage> {
         actions: [
           IconButton(
             icon: const Icon(Icons.qr_code_scanner),
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const QRScannerPage()),
-              );
-            },
+            onPressed: _navigateToQRScanner,
           ),
         ],
       ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : ListView.builder(
-              itemCount: _gyms.length,
-              itemBuilder: (context, index) {
-                final gym = _gyms[index];
-                return ListTile(
-                  title: Text(gym.title),
-                  subtitle: Text(gym.description ?? ''),
-                  trailing: Text('${gym.distance.toStringAsFixed(2)} km'),
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => GymDetailPage(gym: gym),
-                      ),
-                    );
-                  },
-                );
-              },
-            ),
+      body: RefreshIndicator(
+        onRefresh: () => _loadGyms(refresh: true),
+        child: _gyms.isEmpty && !_isLoading
+            ? const Center(child: Text('No gyms found'))
+            : ListView.builder(
+                itemCount: _gyms.length + (_currentPage <= _totalPages ? 1 : 0),
+                itemBuilder: (context, index) {
+                  if (index == _gyms.length) {
+                    if (_isLoading) {
+                      return const Center(child: CircularProgressIndicator());
+                    } else {
+                      _loadGyms();
+                      return const SizedBox.shrink();
+                    }
+                  }
+
+                  return GymCard(gym: _gyms[index]);
+                },
+              ),
+      ),
     );
   }
 }
