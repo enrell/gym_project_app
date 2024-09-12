@@ -12,8 +12,13 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  http: ^1.1.0 # Add this line
+  http: ^1.2.2
   qr_code_scanner: ^1.0.1
+  flutter_dotenv: ^5.0.2
+  flutter_map: ^7.0.2
+  latlong2: ^0.9.0
+  geolocator: ^13.0.1
+  flutter_secure_storage: ^9.0.0  # Add this line
 
 dev_dependencies:
   flutter_test:
@@ -29,4 +34,5 @@ flutter:
 
   assets:
     # Add assets from the images directory to the application.
+    - .env
     - lib/images/
