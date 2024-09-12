@@ -44,3 +44,4 @@ app.*.map.json
 
 # Add this line to your .gitignore file
 .env
+pubspec.lock
