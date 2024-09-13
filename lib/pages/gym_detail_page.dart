@@ -411,7 +411,7 @@ class _GymDetailPageState extends State<GymDetailPage> {
     } catch (e) {
       print('Erro ao obter check-ins restantes: $e');
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Não foi possível obter o número de check-ins restantes')),
+        const SnackBar(content: Text('Não foi possível obter o número de check-ins restantes')),
       );
       setState(() {
         _remainingCheckins = 0;

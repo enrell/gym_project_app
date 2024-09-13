@@ -4,7 +4,7 @@ import 'package:qr_code_scanner/qr_code_scanner.dart';
 class QRScannerPage extends StatefulWidget {
   final Function(String) onScanComplete;
 
-  const QRScannerPage({Key? key, required this.onScanComplete}) : super(key: key);
+  const QRScannerPage({super.key, required this.onScanComplete});
 
   @override
   State<QRScannerPage> createState() => _QRScannerPageState();
